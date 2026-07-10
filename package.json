@@ -1,0 +1,27 @@
+{
+  "name": "codexfast-current-launcher",
+  "version": "0.1.0",
+  "description": "Runtime launcher wrapper for Codex/ChatGPT Desktop on macOS.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "codexfast-current": "bin/launch-codexfast-current.mjs"
+  },
+  "scripts": {
+    "check": "node --check bin/launch-codexfast-current.mjs && node --check test/test-launch-codexfast-current.mjs",
+    "test": "node test/test-launch-codexfast-current.mjs"
+  },
+  "engines": {
+    "node": ">=18.12.0"
+  },
+  "os": [
+    "darwin"
+  ],
+  "keywords": [
+    "codex",
+    "codexfast",
+    "chatgpt-desktop",
+    "macos",
+    "runtime-launcher"
+  ]
+}
