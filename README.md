@@ -2,6 +2,19 @@
 
 一个适用于 macOS Codex/ChatGPT Desktop 的本地运行时启动器。它会临时准备并启动 `codexfast` 会话，不修改已安装的 App 本体。
 
+这个项目主要面向通过中转站、自定义 Provider 或 API Key 使用 Codex 的用户。这类登录方式即使后端支持相应模型，也可能看不到官方 Fast 入口或模型菜单。使用官方 ChatGPT 账号登录且界面功能正常的用户，一般不需要使用本项目。
+
+## 当前兼容情况
+
+以下是 2026-07-11 的验证结果：
+
+| 客户端版本 | 客户端表现 | 本项目的作用 |
+| --- | --- | --- |
+| `26.707.31428+5059` | 上一版本可能不显示 GPT-5.6，Fast 入口也不可见 | 补充 GPT-5.6 模型菜单和 Fast 相关入口 |
+| `26.707.41301+5103` | 官方已恢复模型显示，但 Fast 入口仍不可见 | 主要补充 Fast 相关入口，并保留模型菜单兼容处理 |
+
+项目会根据客户端更新继续适配。每次更新后的实际支持情况，以仓库最新说明和运行时输出为准。
+
 ## 使用前准备
 
 - macOS
@@ -96,6 +109,8 @@ CODEXFAST_PACKAGE_TARBALL=/path/to/codexfast.tgz node bin/launch-codexfast-curre
 ## 说明
 
 这是非官方开源项目，与 OpenAI 无隶属关系。使用者应自行承担运行风险，本项目不分发 OpenAI App 或其资源文件。
+
+社区：[LINUX DO](https://linux.do)
 
 维护、兼容适配和发布说明见 [维护者文档](docs/MAINTAINING.md)。
 
