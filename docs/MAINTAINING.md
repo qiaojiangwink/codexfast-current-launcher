@@ -26,6 +26,7 @@
 | `26.715.21316+5484` | 使用 `codexfast 0.54.0` 对 Sparkle 待安装包实测；Composer Speed 菜单、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
 | `26.715.31925+5551` | 使用 `codexfast 0.56.0` 对已安装 App 实测；Composer Speed 菜单、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
 | `26.715.52143+5591` | 使用 `codexfast 0.56.0` 对 Sparkle 待安装包实测；Composer Speed 菜单、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
+| `26.715.61943+5628` | 使用 `codexfast 0.57.0` 对 Sparkle 待安装包实测；Composer Speed 菜单、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
 
 版本表记录的是验证时的客户端行为，不代表同一版本下所有账号、中转站或服务端配置都会得到相同结果。
 
