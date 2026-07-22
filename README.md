@@ -6,7 +6,7 @@
 
 ## 当前兼容情况
 
-以下是 2026-07-21 的验证结果：
+以下是 2026-07-22 的验证结果：
 
 | 客户端版本 | 客户端表现 | 本项目的作用 |
 | --- | --- | --- |
@@ -21,6 +21,7 @@
 | `26.715.31925+5551` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.56.0` 对已安装 App 实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
 | `26.715.52143+5591` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.56.0` 对 Sparkle 待安装包实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
 | `26.715.61943+5628` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.57.0` 对 Sparkle 待安装包实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
+| `26.715.71837+5702` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.59.0` 对 Sparkle 待安装包实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
 
 项目会根据客户端更新继续适配。每次更新后的实际支持情况，以仓库最新说明和运行时输出为准。
 
