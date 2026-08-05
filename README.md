@@ -30,6 +30,7 @@
 | `26.721.81911+5973` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.64.0` 对 Sparkle 待安装包实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
 | `26.727.40816+6067` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.65.0` 对 Sparkle 待安装包实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
 | `26.730.61309+6223` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.67.0` 对 Sparkle 待安装包实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
+| `26.730.61639+6234` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.68.0` 对 Sparkle 待安装包实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
 
 项目会根据客户端更新继续适配。每次更新后的实际支持情况，以仓库最新说明和运行时输出为准。
 
