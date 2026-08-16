@@ -39,6 +39,7 @@
 | `26.730.61639+6234` | 使用 `codexfast 0.68.0` 对 Sparkle 待安装包实测；Composer Speed 菜单、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
 | `26.803.41515+6321` | 使用 `codexfast 0.69.0` 对 Sparkle 待安装包实测；Composer Speed 菜单、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
 | `26.803.61601+6396` | 使用 `codexfast 0.70.0` 对 Sparkle 待安装包实测；Composer Speed 菜单、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
+| `26.810.52044+6662` | 使用 `codexfast 0.72.0` 对 Sparkle 待安装包实测；新版 Speed 菜单只依赖非空 Service Tier 选项，不再需要单独解除菜单开关。本项目新增模型筛选器签名适配后，GPT-5.6 模型 ID/列表、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
 
 版本表记录的是验证时的客户端行为，不代表同一版本下所有账号、中转站或服务端配置都会得到相同结果。
 

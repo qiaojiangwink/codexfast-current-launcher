@@ -219,11 +219,15 @@ const CODEXFAST_MODEL_OVERRIDE_SOURCE_LITERAL = JSON.stringify(CODEXFAST_MODEL_O
 const CODEXFAST_MODEL_OVERRIDE_TARGET_LITERAL = JSON.stringify(CODEXFAST_MODEL_OVERRIDE_TARGET_ID);
 const CODEXFAST_MODEL_OVERRIDE_DISPLAY_LITERAL = JSON.stringify(CODEXFAST_MODEL_OVERRIDE_TARGET_DISPLAY_NAME);
 const CURRENT_MODEL_LIST_SELECT_SIGNATURE = /select:\\(\\{data:([A-Za-z_$][\\w$]*)\\}\\)=>([A-Za-z_$][\\w$]*)\\(\\{authMethod:([A-Za-z_$][\\w$]*),availableModels:new Set\\(([A-Za-z_$][\\w$]*)\\),defaultModel:([A-Za-z_$][\\w$]*),enabledReasoningEfforts:([A-Za-z_$][\\w$]*),includeUltraReasoningEffort:([A-Za-z_$][\\w$]*),models:\\1,useHiddenModels:([A-Za-z_$][\\w$]*)\\}\\)/;
+const CURRENT_MODEL_LIST_SELECT_SIGNATURE_WITH_ADDITIONAL_MODELS = /select:\\(\\{data:([A-Za-z_$][\\w$]*)\\}\\)=>([A-Za-z_$][\\w$]*)\\(\\{additionalAvailableModels:new Set\\(([A-Za-z_$][\\w$]*)\\),authMethod:([A-Za-z_$][\\w$]*),availableModels:([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)?),defaultModel:([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)?),enabledReasoningEfforts:([A-Za-z_$][\\w$]*),includeUltraReasoningEffort:([A-Za-z_$][\\w$]*),isCustomModelProvider:([A-Za-z_$][\\w$]*),models:\\1,useHiddenModels:([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)?)\\}\\)/;
 function codexfastCurrentModelListExpression(modelsVar) {
     return \`(()=>{let m=\${modelsVar};if(!Array.isArray(m))return m;let s=\${CODEXFAST_MODEL_OVERRIDE_SOURCE_LITERAL},t=\${CODEXFAST_MODEL_OVERRIDE_TARGET_LITERAL},d=\${CODEXFAST_MODEL_OVERRIDE_DISPLAY_LITERAL},h=m.some(e=>e?.model===t),o=[];for(let e of m){if(h&&e?.model===s)continue;let n=e?.model===s||e?.model===t?{...e,id:t,model:t,displayName:e.displayName&&e.model===t?e.displayName:d,hidden:!1,additionalSpeedTiers:Array.isArray(e.additionalSpeedTiers)?e.additionalSpeedTiers.includes(\\\`fast\\\`)?e.additionalSpeedTiers:[...e.additionalSpeedTiers,\\\`fast\\\`]:[\\\`fast\\\`],serviceTiers:Array.isArray(e.serviceTiers)&&e.serviceTiers.length>0?e.serviceTiers:[\${GPT_55_FAST_SERVICE_TIER}],defaultServiceTier:e.defaultServiceTier??null}:e;if(n?.model===t&&o.some(e=>e?.model===t))continue;o.push(n)}return o.some(e=>e?.model===t)?o:[...o,\${GPT_55_MODEL_ENTRY}]})()\`;
 }
 function codexfastPatchCurrentModelList(_match, modelsVar, selectorVar, authMethodVar, availableModelsVar, defaultModelVar, effortsVar, ultraVar, hiddenVar) {
     return \`select:({data:\${modelsVar}})=>\${selectorVar}({authMethod:\${authMethodVar},availableModels:new Set([...\${availableModelsVar},\${CODEXFAST_MODEL_OVERRIDE_TARGET_LITERAL}]),defaultModel:\${defaultModelVar}===\${CODEXFAST_MODEL_OVERRIDE_SOURCE_LITERAL}?\${CODEXFAST_MODEL_OVERRIDE_TARGET_LITERAL}:\${defaultModelVar},enabledReasoningEfforts:\${effortsVar},includeUltraReasoningEffort:\${ultraVar},models:/*codexfast-model-override-list*/\${codexfastCurrentModelListExpression(modelsVar)},useHiddenModels:\${hiddenVar}})\`;
+}
+function codexfastPatchCurrentModelListWithAdditionalModels(_match, modelsVar, selectorVar, additionalModelsVar, authMethodVar, availableModelsVar, defaultModelVar, effortsVar, ultraVar, customProviderVar, hiddenVar) {
+    return \`select:({data:\${modelsVar}})=>\${selectorVar}({additionalAvailableModels:new Set([...\${additionalModelsVar},\${CODEXFAST_MODEL_OVERRIDE_TARGET_LITERAL}]),authMethod:\${authMethodVar},availableModels:new Set([...\${availableModelsVar},\${CODEXFAST_MODEL_OVERRIDE_TARGET_LITERAL}]),defaultModel:\${defaultModelVar}===\${CODEXFAST_MODEL_OVERRIDE_SOURCE_LITERAL}?\${CODEXFAST_MODEL_OVERRIDE_TARGET_LITERAL}:\${defaultModelVar},enabledReasoningEfforts:\${effortsVar},includeUltraReasoningEffort:\${ultraVar},isCustomModelProvider:\${customProviderVar},models:/*codexfast-model-override-list*/\${codexfastCurrentModelListExpression(modelsVar)},useHiddenModels:\${hiddenVar}})\`;
 }
 function codexfastReplaceModelIdLiterals(content) {
     return content
@@ -231,13 +235,11 @@ function codexfastReplaceModelIdLiterals(content) {
         .replaceAll(CODEXFAST_MODEL_OVERRIDE_SOURCE_LITERAL, CODEXFAST_MODEL_OVERRIDE_TARGET_LITERAL)
         .replaceAll(\`'\${CODEXFAST_MODEL_OVERRIDE_SOURCE_ID}'\`, \`'\${CODEXFAST_MODEL_OVERRIDE_TARGET_ID}'\`);
 }
-const codexfastPreviousApplyRuntimePatchesToBody = applyRuntimePatchesToBody;
-applyRuntimePatchesToBody = function(resourcePath, body) {
-    const result = codexfastPreviousApplyRuntimePatchesToBody(resourcePath, body);
-    let content = result.content;
-    const matchedLabels = [...result.matchedLabels];
-    const patchedLabels = [...result.patchedLabels];
-    const alreadyPatchedLabels = [...result.alreadyPatchedLabels];
+function codexfastApplyCurrentModelRuntimePatchesToBody(_resourcePath, body) {
+    let content = body;
+    const matchedLabels = [];
+    const patchedLabels = [];
+    const alreadyPatchedLabels = [];
     const recordReplacement = (label, nextContent) => {
         if (nextContent === content) {
             return;
@@ -253,9 +255,23 @@ applyRuntimePatchesToBody = function(resourcePath, body) {
         if (content.includes(CODEXFAST_MODEL_OVERRIDE_SOURCE_ID)) {
             recordReplacement(\`\${CODEXFAST_MODEL_OVERRIDE_TARGET_DISPLAY_NAME} model id literals\`, codexfastReplaceModelIdLiterals(content));
         }
+        recordReplacement(\`\${CODEXFAST_MODEL_OVERRIDE_TARGET_DISPLAY_NAME} model list current\`, content.replace(CURRENT_MODEL_LIST_SELECT_SIGNATURE_WITH_ADDITIONAL_MODELS, codexfastPatchCurrentModelListWithAdditionalModels));
         recordReplacement(\`\${CODEXFAST_MODEL_OVERRIDE_TARGET_DISPLAY_NAME} model list current\`, content.replace(CURRENT_MODEL_LIST_SELECT_SIGNATURE, codexfastPatchCurrentModelList));
     }
     return { content, matchedLabels, patchedLabels, alreadyPatchedLabels };
+}
+function codexfastMergeRuntimePatchResults(baseResult, extensionResult) {
+    return {
+        content: extensionResult.content,
+        matchedLabels: [...baseResult.matchedLabels, ...extensionResult.matchedLabels],
+        patchedLabels: [...baseResult.patchedLabels, ...extensionResult.patchedLabels],
+        alreadyPatchedLabels: [...baseResult.alreadyPatchedLabels, ...extensionResult.alreadyPatchedLabels],
+    };
+}
+const codexfastPreviousApplyRuntimePatchesToBody = applyRuntimePatchesToBody;
+applyRuntimePatchesToBody = function(resourcePath, body) {
+    const result = codexfastPreviousApplyRuntimePatchesToBody(resourcePath, body);
+    return codexfastMergeRuntimePatchResults(result, codexfastApplyCurrentModelRuntimePatchesToBody(resourcePath, result.content));
 };
 `;
 }
@@ -266,6 +282,31 @@ function addCurrentModelRuntimePatch(source) {
   if (source.includes("codexfast-model-override-current-extension")) return source;
   const displayName = modelDisplayName(modelId);
   return replacePatcherSource(source, (patcherSource) => `${patcherSource}${currentModelRuntimePatchSource(modelId, displayName)}`);
+}
+
+function preserveCurrentModelPatchAfterTargetFiltering(source) {
+  if (!source.includes("codexfast-model-override-current-extension")) return source;
+  const before = [
+    "  return { content, matchedLabels, patchedLabels, alreadyPatchedLabels };",
+    "};`;",
+    "}",
+    "async function enableRuntimePatchInterception",
+  ].join("\n");
+  const after = [
+    "  const codexfastFilteredResult = { content, matchedLabels, patchedLabels, alreadyPatchedLabels };",
+    "  // codexfast-current-model-filter-bridge",
+    '  return typeof codexfastApplyCurrentModelRuntimePatchesToBody !== "function" || typeof codexfastMergeRuntimePatchResults !== "function"',
+    "    ? codexfastFilteredResult",
+    "    : codexfastMergeRuntimePatchResults(codexfastFilteredResult, codexfastApplyCurrentModelRuntimePatchesToBody(_resourcePath, content));",
+    "};`;",
+    "}",
+    "async function enableRuntimePatchInterception",
+  ].join("\n");
+  const nextSource = source.replace(before, after);
+  if (nextSource === source) {
+    throw new Error("Could not preserve the current model patch after codexfast target filtering.");
+  }
+  return nextSource;
 }
 
 function addModelOverride(source) {
@@ -341,6 +382,7 @@ function prepareLauncher({ isolatedProfile = null } = {}) {
   source = addExecutableName(source, info.executable);
   source = addModelOverride(source);
   source = addCurrentModelRuntimePatch(source);
+  source = preserveCurrentModelPatchAfterTargetFiltering(source);
   source = addUserDataDir(source, isolatedProfile);
 
   fs.writeFileSync(preparedLauncher, source, "utf8");

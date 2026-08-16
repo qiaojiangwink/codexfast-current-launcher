@@ -46,6 +46,7 @@ assert.ok(preparedLauncher, output(prepared));
 const preparedSource = fs.readFileSync(preparedLauncher, "utf8");
 assert.match(preparedSource, /gpt-5\.6/);
 assert.match(preparedSource, /GPT-5\.6/);
+assert.match(preparedSource, /codexfast-current-model-filter-bridge/);
 
 const patcherSourceLiteral = preparedSource.match(/const __PATCHER_SOURCE__ = ((?:"(?:[^"\\]|\\.)*"));/)?.[1];
 assert.ok(patcherSourceLiteral, "prepared launcher should embed runtime patcher source");
@@ -58,5 +59,18 @@ assert.notEqual(modelListPatch.content, currentModelListBody);
 assert.match(modelListPatch.content, /codexfast-model-override-list/);
 assert.match(modelListPatch.content, /gpt-5\.6/);
 assert.ok(modelListPatch.patchedLabels.includes("GPT-5.6 model list current"));
+
+const currentModelListBodyWithAdditionalModels =
+  "queryFn:()=>Ch(`list-models-for-host`,{hostId:r,includeHidden:!0,cursor:null,limit:a}),select:({data:r})=>Jv({additionalAvailableModels:new Set(e),authMethod:t,availableModels:n.availableModels,defaultModel:n.defaultModel,enabledReasoningEfforts:c,includeUltraReasoningEffort:l,isCustomModelProvider:i,models:r,useHiddenModels:n.useHiddenModels})";
+const modelListPatchWithAdditionalModels = applyRuntimePatchesToBody(
+  "app://-/assets/app-main.js",
+  currentModelListBodyWithAdditionalModels,
+);
+assert.notEqual(modelListPatchWithAdditionalModels.content, currentModelListBodyWithAdditionalModels);
+assert.match(modelListPatchWithAdditionalModels.content, /codexfast-model-override-list/);
+assert.match(modelListPatchWithAdditionalModels.content, /additionalAvailableModels:new Set\(\[\.\.\.e,\"gpt-5\.6\"\]\)/);
+assert.match(modelListPatchWithAdditionalModels.content, /availableModels:new Set\(\[\.\.\.n\.availableModels,\"gpt-5\.6\"\]\)/);
+assert.match(modelListPatchWithAdditionalModels.content, /isCustomModelProvider:i/);
+assert.ok(modelListPatchWithAdditionalModels.patchedLabels.includes("GPT-5.6 model list current"));
 
 console.log("launch-codexfast-current tests passed");
