@@ -277,7 +277,7 @@ applyRuntimePatchesToBody = function(resourcePath, body) {
 }
 
 function addCurrentModelRuntimePatch(source) {
-  const modelId = (process.env.CODEXFAST_MODEL_ID ?? "gpt-5.6").trim();
+  const modelId = (process.env.CODEXFAST_MODEL_ID ?? "").trim();
   if (!modelId || modelId === "gpt-5.5") return source;
   if (source.includes("codexfast-model-override-current-extension")) return source;
   const displayName = modelDisplayName(modelId);
@@ -310,7 +310,7 @@ function preserveCurrentModelPatchAfterTargetFiltering(source) {
 }
 
 function addModelOverride(source) {
-  const modelId = (process.env.CODEXFAST_MODEL_ID ?? "gpt-5.6").trim();
+  const modelId = (process.env.CODEXFAST_MODEL_ID ?? "").trim();
   if (!modelId || modelId === "gpt-5.5") return source;
   return source
     .replaceAll("gpt-5\\.5", escapeRegexLiteral(modelId))

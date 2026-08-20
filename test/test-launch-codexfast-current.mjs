@@ -8,12 +8,15 @@ const launcher = new URL("../bin/launch-codexfast-current.mjs", import.meta.url)
 const scriptDir = path.dirname(launcher);
 const bundledTarball = path.join(scriptDir, "vendor", "codexfast-0.48.0.tgz");
 
-function run(args) {
+function run(args, env = {}) {
   return spawnSync(process.execPath, [launcher, ...args], {
     encoding: "utf8",
     env: {
       ...process.env,
+      CODEXFAST_MODEL_ID: "",
+      CODEXFAST_MODEL_DISPLAY_NAME: "",
       ...(fs.existsSync(bundledTarball) ? { CODEXFAST_PACKAGE_TARBALL: bundledTarball } : {}),
+      ...env,
     },
     timeout: 30_000,
   });
@@ -44,11 +47,21 @@ assert.equal(prepared.status, 0, output(prepared));
 const preparedLauncher = output(prepared).match(/"preparedLauncher": "([^"]+)"/)?.[1];
 assert.ok(preparedLauncher, output(prepared));
 const preparedSource = fs.readFileSync(preparedLauncher, "utf8");
-assert.match(preparedSource, /gpt-5\.6/);
-assert.match(preparedSource, /GPT-5\.6/);
-assert.match(preparedSource, /codexfast-current-model-filter-bridge/);
+assert.doesNotMatch(preparedSource, /codexfast-model-override-current-extension/);
+assert.doesNotMatch(preparedSource, /codexfast-current-model-filter-bridge/);
 
-const patcherSourceLiteral = preparedSource.match(/const __PATCHER_SOURCE__ = ((?:"(?:[^"\\]|\\.)*"));/)?.[1];
+const modelOverridePrepared = run(["prepare"], {
+  CODEXFAST_MODEL_ID: "gpt-5.6",
+  CODEXFAST_MODEL_DISPLAY_NAME: "GPT-5.6",
+});
+assert.equal(modelOverridePrepared.status, 0, output(modelOverridePrepared));
+const modelOverridePreparedLauncher = output(modelOverridePrepared).match(/"preparedLauncher": "([^"]+)"/)?.[1];
+assert.ok(modelOverridePreparedLauncher, output(modelOverridePrepared));
+const modelOverridePreparedSource = fs.readFileSync(modelOverridePreparedLauncher, "utf8");
+assert.match(modelOverridePreparedSource, /codexfast-model-override-current-extension/);
+assert.match(modelOverridePreparedSource, /codexfast-current-model-filter-bridge/);
+
+const patcherSourceLiteral = modelOverridePreparedSource.match(/const __PATCHER_SOURCE__ = ((?:"(?:[^"\\]|\\.)*"));/)?.[1];
 assert.ok(patcherSourceLiteral, "prepared launcher should embed runtime patcher source");
 const patcherSource = eval(patcherSourceLiteral);
 const applyRuntimePatchesToBody = new Function(`${patcherSource}\nreturn applyRuntimePatchesToBody;`)();

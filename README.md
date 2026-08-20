@@ -2,11 +2,11 @@
 
 一个适用于 macOS Codex/ChatGPT Desktop 的本地运行时启动器。它会临时准备并启动 `codexfast` 会话，不修改已安装的 App 本体。
 
-这个项目主要面向通过中转站、自定义 Provider 或 API Key 使用 Codex 的用户。这类登录方式即使后端支持相应模型，也可能看不到官方 Fast 入口或模型菜单。使用官方 ChatGPT 账号登录且界面功能正常的用户，一般不需要使用本项目。
+这个项目主要面向通过中转站、自定义 Provider 或 API Key 使用 Codex 的用户。这类登录方式即使后端支持 Fast，也可能看不到官方 Fast 入口。启动器默认保留上游返回的模型列表，不新增、替换或伪造模型；使用官方 ChatGPT 账号登录且界面功能正常的用户，一般不需要使用本项目。
 
 ## 当前兼容情况
 
-以下是 2026-08-16 的验证结果：
+以下是 2026-08-20 的验证结果：
 
 | 客户端版本 | 客户端表现 | 本项目的作用 |
 | --- | --- | --- |
@@ -34,6 +34,7 @@
 | `26.803.41515+6321` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.69.0` 对 Sparkle 待安装包实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
 | `26.803.61601+6396` | Fast 相关本地判断仍存在 | 使用 `codexfast 0.70.0` 对 Sparkle 待安装包实测，Composer Speed 菜单、`/fast` 和 Service Tier 相关目标均能命中，隔离启动可正常到达 ready 状态 |
 | `26.810.52044+6662` | Speed 菜单改为由模型的 Service Tier 选项直接显示，模型列表筛选器签名也有调整 | 使用 `codexfast 0.72.0` 对 Sparkle 待安装包实测；本项目已适配新版模型筛选器，GPT-5.6 模型列表、`/fast` 和 3 类 Service Tier 目标均能命中，隔离启动可正常到达 ready 状态 |
+| `26.814.41407+6720` | 上游模型列表可正常读取，Fast 相关本地判断仍存在 | 使用 `codexfast 0.73.0` 对已安装 App 实测；默认不改写模型列表，`/fast` 和 3 类 Service Tier 目标均能命中，隔离启动可正常到达 ready 状态 |
 
 项目会根据客户端更新继续适配。每次更新后的实际支持情况，以仓库最新说明和运行时输出为准。
 
@@ -80,7 +81,7 @@ node bin/launch-codexfast-current.mjs status
 
 运行 `relaunch` 后，终端会显示 `Patched targets:`。具体条目会随 App 版本变化，只要最终出现 `Runtime launch completed.`，就说明临时运行时已经启动。
 
-随后可在 App 中检查 Fast 模式或模型菜单。界面出现某个模型不代表账号一定拥有服务端调用权限，最终仍以实际请求结果为准。
+随后可在 App 中检查 Fast 模式。默认运行时的 `Patched targets:` 不应出现 `GPT-... model` 条目，模型菜单应保持为上游实际返回的内容。
 
 ## App 更新后
 
@@ -96,11 +97,13 @@ node bin/launch-codexfast-current.mjs relaunch
 
 ## 可选设置
 
-指定模型：
+显式覆盖模型（默认关闭）：
 
 ```zsh
 CODEXFAST_MODEL_ID=gpt-5.6 node bin/launch-codexfast-current.mjs relaunch
 ```
+
+只有在明确需要本地模型兼容覆盖时才设置该变量。普通使用不要设置，否则模型菜单将不再是上游原始结果。
 
 指定 App 路径：
 
@@ -122,7 +125,7 @@ CODEXFAST_PACKAGE_TARBALL=/path/to/codexfast.tgz node bin/launch-codexfast-curre
 
 ### 界面有模型，但发送失败
 
-本项目只能调整本地界面和运行时请求配置，不能授予账号模型权限或绕过服务端限制。
+先确认启动命令前没有设置 `CODEXFAST_MODEL_ID`。模型覆盖只能调整本地界面，不能授予账号模型权限或绕过服务端限制。
 
 ### 更新后没有 Fast 模式或目标模型
 

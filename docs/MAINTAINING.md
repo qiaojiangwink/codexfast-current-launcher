@@ -10,7 +10,7 @@
 
 ## 适配范围
 
-项目主要处理通过中转站、自定义 Provider 或 API Key 使用 Codex 时，Fast 入口和模型菜单因认证路径或客户端判断而不可见的问题。官方 ChatGPT 登录路径应单独验证，不应把本项目描述为所有用户都必须使用的工具。
+项目主要处理通过中转站、自定义 Provider 或 API Key 使用 Codex 时，Fast 入口因认证路径或客户端判断而不可见的问题。默认启动必须保留上游 `model/list` 结果；模型覆盖仅作为显式启用的兼容选项。官方 ChatGPT 登录路径应单独验证，不应把本项目描述为所有用户都必须使用的工具。
 
 当前适配记录：
 
@@ -40,6 +40,7 @@
 | `26.803.41515+6321` | 使用 `codexfast 0.69.0` 对 Sparkle 待安装包实测；Composer Speed 菜单、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
 | `26.803.61601+6396` | 使用 `codexfast 0.70.0` 对 Sparkle 待安装包实测；Composer Speed 菜单、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
 | `26.810.52044+6662` | 使用 `codexfast 0.72.0` 对 Sparkle 待安装包实测；新版 Speed 菜单只依赖非空 Service Tier 选项，不再需要单独解除菜单开关。本项目新增模型筛选器签名适配后，GPT-5.6 模型 ID/列表、`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
+| `26.814.41407+6720` | 使用 `codexfast 0.73.0` 对已安装 App 实测；默认关闭模型覆盖，运行时不命中任何模型改写目标，`/fast`、3 类 service tier 和自动更新目标均命中，隔离运行时启动成功到达 ready 状态 |
 
 版本表记录的是验证时的客户端行为，不代表同一版本下所有账号、中转站或服务端配置都会得到相同结果。
 
@@ -89,14 +90,14 @@ node bin/launch-codexfast-current.mjs relaunch --dry-run
 1. 执行 `status`，确认 App 路径、真实可执行文件名、版本号和构建号读取正确。
 2. 执行 `prepare`，确认 CDP frame 和 runtime patch body 自测通过。
 3. 执行 `isolated-test`，确认输出 `Runtime launch completed.` 并完成清理。
-4. 检查 `Patched targets:`。条目会随 App 代码变化，不应在用户文档中承诺固定列表。
+4. 检查 `Patched targets:`。默认启动不应出现模型改写目标；Fast 相关条目会随 App 代码变化，不应在用户文档中承诺固定列表。
 5. 仅在隔离测试通过后，使用 `relaunch` 验证真实 App。
 
 如果 `prepare` 通过但某个界面入口缺失，应检查新版渲染代码中的模型列表、Fast 命令和 service tier 判断是否改变。优先更新精确匹配逻辑，并为变化补充回归测试。
 
 ## 环境变量
 
-- `CODEXFAST_MODEL_ID`：覆盖模型 ID，默认值为 `gpt-5.6`。
+- `CODEXFAST_MODEL_ID`：显式覆盖模型 ID；默认未设置，不修改上游模型列表。
 - `CODEXFAST_MODEL_DISPLAY_NAME`：覆盖模型显示名称。
 - `CODEXFAST_APP_BUNDLE`：指定待检测的 App 路径。
 - `CODEXFAST_PACKAGE_TARBALL`：使用本地 `codexfast` tarball。
