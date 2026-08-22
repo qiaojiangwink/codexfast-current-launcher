@@ -84,6 +84,8 @@ node bin/launch-codexfast-current.mjs status
 
 随后可在 App 中检查 Fast 模式。默认运行时的 `Patched targets:` 不应出现 `GPT-... model` 条目，模型菜单应保持为上游实际返回的内容。
 
+为保证 App 内置能力正常，启动器不会向 ChatGPT/Codex 进程注入 `NODE_OPTIONS`；如果启动命令已经从旧会话继承 codexfast 的主进程钩子，也会只移除该钩子并保留其他 Node 参数。终端命令、Chrome 接管、Computer Use 等子进程因此不会继续继承该钩子。自动更新保持官方默认行为，启动器不再添加“停用自动更新”设置。
+
 ## App 更新后
 
 进入仓库并更新脚本，然后重新启动：
@@ -127,6 +129,10 @@ CODEXFAST_PACKAGE_TARBALL=/path/to/codexfast.tgz node bin/launch-codexfast-curre
 ### 界面有模型，但发送失败
 
 先确认启动命令前没有设置 `CODEXFAST_MODEL_ID`。模型覆盖只能调整本地界面，不能授予账号模型权限或绕过服务端限制。
+
+### Chrome、Computer Use 或 Node 命令异常
+
+先执行 `git pull` 获取最新版启动器，再完全退出 App 并重新运行 `relaunch`。旧版启动器创建的会话已经继承了 `NODE_OPTIONS`，无法在运行中清除，必须重启一次。
 
 ### 更新后没有 Fast 模式或目标模型
 

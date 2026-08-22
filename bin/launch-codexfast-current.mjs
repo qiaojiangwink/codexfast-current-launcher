@@ -330,6 +330,38 @@ function allowWrapperManagedRunningCheck(source) {
   );
 }
 
+function disableMainProcessAutomaticUpdateHook(source) {
+  if (!source.includes("function childEnvWithAutomaticUpdateSetting")) return source;
+  if (source.includes("codexfast-current: remove an inherited codexfast hook")) return source;
+
+  const nextSource = source.replace(
+    /function childEnvWithAutomaticUpdateSetting\(env = process\.env\) \{[\s\S]*?\n\}/,
+    [
+      "function childEnvWithAutomaticUpdateSetting(env = process.env) {",
+      "    // codexfast-current: remove an inherited codexfast hook without changing other Node options",
+      '    const nodeOptions = env.NODE_OPTIONS?.replace(/(?:^|\\s)--require=(?:"[^"]*main-process-hook\\.cjs"|\'[^\']*main-process-hook\\.cjs\'|[^\\s]*main-process-hook\\.cjs)/gu, " ").trim();',
+      '    if ((nodeOptions || "") === (env.NODE_OPTIONS?.trim() || "")) return env;',
+      "    const childEnv = { ...env };",
+      "    if (nodeOptions) childEnv.NODE_OPTIONS = nodeOptions;",
+      "    else delete childEnv.NODE_OPTIONS;",
+      "    return childEnv;",
+      "}",
+    ].join("\n"),
+  );
+  if (nextSource === source) {
+    throw new Error("Could not disable the codexfast automatic-update process hook.");
+  }
+  return nextSource;
+}
+
+function disableAutomaticUpdateRuntimeTargets(source) {
+  return replacePatcherSource(source, (patcherSource) => {
+    const targetEntry = "    ...UPDATE_TARGET_SPECS,\n";
+    if (!patcherSource.includes(targetEntry)) return patcherSource;
+    return patcherSource.replace(targetEntry, "");
+  });
+}
+
 function findBundledCodexfastTarball() {
   const vendorDir = path.join(scriptDir, "vendor");
   if (!fs.existsSync(vendorDir)) return null;
@@ -376,11 +408,13 @@ function prepareLauncher({ isolatedProfile = null } = {}) {
   let source = fs.readFileSync(sourceLauncher, "utf8");
   source = addAppBundle(source);
   source = allowWrapperManagedRunningCheck(source);
+  source = disableMainProcessAutomaticUpdateHook(source);
   source = addVersionToObject(source, info.versionKey, description);
   source = addVersionToSet(source, "runtimePatchNoPluginsAccessRequiredVersionKeys", info.versionKey);
   source = addVersionToSet(source, "runtimePatchNoPluginTargetsVersionKeys", info.versionKey);
   source = addExecutableName(source, info.executable);
   source = addModelOverride(source);
+  source = disableAutomaticUpdateRuntimeTargets(source);
   source = addCurrentModelRuntimePatch(source);
   source = preserveCurrentModelPatchAfterTargetFiltering(source);
   source = addUserDataDir(source, isolatedProfile);
@@ -425,6 +459,42 @@ function killProcessesUsingProfile(profile) {
   }
 }
 
+function verifyIsolatedChildEnvironment(profile) {
+  let isolatedMain = null;
+  let appServer = null;
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    const processes = readCodexProcesses().all;
+    isolatedMain = processes.find(
+      (processInfo) => isMainCodexProcess(processInfo) && processInfo.command.includes(`--user-data-dir=${profile}`),
+    );
+    appServer = isolatedMain
+      ? processes.find(
+          (processInfo) =>
+            processInfo.ppid === isolatedMain.pid &&
+            processInfo.command.includes(`${appBundle}/Contents/Resources/codex`) &&
+            processInfo.command.includes("app-server"),
+        )
+      : null;
+    if (appServer) break;
+    sleep(250);
+  }
+  if (!isolatedMain || !appServer) {
+    throw new Error("Could not find the isolated ChatGPT/Codex App Server process.");
+  }
+
+  const environment = spawnSync("ps", ["eww", "-p", String(appServer.pid), "-o", "command="], {
+    encoding: "utf8",
+  });
+  if (environment.status !== 0) {
+    throw new Error("Could not inspect the isolated App Server environment.");
+  }
+  if ((environment.stdout ?? "").includes("main-process-hook.cjs")) {
+    throw new Error("The codexfast main-process hook leaked into the isolated App Server environment.");
+  }
+  console.log("Isolated child environment self-test passed");
+}
+
 async function isolatedTest() {
   const profile = path.join(os.tmpdir(), "codexfast-current-profile");
   const codexHome = path.join(profile, "codex-home");
@@ -448,10 +518,12 @@ async function isolatedTest() {
 
   let output = "";
   let settled = false;
+  let timeout = null;
 
   const finish = (code) => {
     if (settled) return;
     settled = true;
+    if (timeout) clearTimeout(timeout);
     killProcessesUsingProfile(profile);
     fs.rmSync(profile, { recursive: true, force: true });
     if (code !== 0) process.exitCode = code;
@@ -461,7 +533,15 @@ async function isolatedTest() {
     const text = chunk.toString();
     process.stdout.write(text);
     output += text;
-    if (output.includes("Runtime launch completed.")) {
+    if (!settled && output.includes("Runtime launch completed.")) {
+      try {
+        verifyIsolatedChildEnvironment(profile);
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        child.kill("SIGINT");
+        finish(1);
+        return;
+      }
       console.log("\nIsolated runtime patch test reached ready state; cleaning up test app.");
       child.kill("SIGINT");
       finish(0);
@@ -474,7 +554,7 @@ async function isolatedTest() {
     if (!settled) finish(code ?? 1);
   });
 
-  setTimeout(() => {
+  timeout = setTimeout(() => {
     if (!settled) {
       console.error("Timed out waiting for isolated runtime patch readiness.");
       child.kill("SIGINT");

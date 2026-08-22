@@ -104,6 +104,8 @@ node bin/launch-codexfast-current.mjs relaunch --dry-run
 - `CODEXFAST_PACKAGE_TARBALL`：使用本地 `codexfast` tarball。
 - `CODEXFAST_DEBUG_RUNTIME`：启用上游运行时调试输出。
 
+上游自动更新钩子通过 `NODE_OPTIONS=--require=.../main-process-hook.cjs` 注入 App。App Server 会复制主进程的完整环境，导致终端命令、Chrome 接管和 Computer Use 等子进程也加载该钩子。本项目会让 `childEnvWithAutomaticUpdateSetting()` 不再新增钩子，并清除可能从旧会话继承的 `main-process-hook.cjs` 参数，同时保留其他 `NODE_OPTIONS`；CDP 运行时目标也会排除 `UPDATE_TARGET_SPECS`，自动更新保持官方默认行为。修改相关逻辑时必须运行 `npm test`，确认准备后的启动器不再注入钩子且不再应用自动更新界面补丁；还要运行 `isolated-test`，确认输出 `Isolated child environment self-test passed`。
+
 ## 开源与发布检查
 
 公开提交中不得包含：

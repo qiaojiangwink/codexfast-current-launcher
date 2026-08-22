@@ -49,6 +49,47 @@ assert.ok(preparedLauncher, output(prepared));
 const preparedSource = fs.readFileSync(preparedLauncher, "utf8");
 assert.doesNotMatch(preparedSource, /codexfast-model-override-current-extension/);
 assert.doesNotMatch(preparedSource, /codexfast-current-model-filter-bridge/);
+assert.match(
+  preparedSource,
+  /function childEnvWithAutomaticUpdateSetting\(env = process\.env\) \{\n    \/\/ codexfast-current: remove an inherited codexfast hook/,
+);
+assert.doesNotMatch(preparedSource, /CODEXFAST_ORIGINAL_NODE_OPTIONS/);
+
+const childEnvFunctionSource = preparedSource.match(
+  /function childEnvWithAutomaticUpdateSetting\(env = process\.env\) \{[\s\S]*?\n\}/,
+)?.[0];
+assert.ok(childEnvFunctionSource, "prepared launcher should contain the child environment helper");
+const childEnvWithAutomaticUpdateSetting = new Function(
+  `${childEnvFunctionSource}\nreturn childEnvWithAutomaticUpdateSetting;`,
+)();
+const cleanEnvironment = { NODE_OPTIONS: "--trace-warnings" };
+assert.strictEqual(childEnvWithAutomaticUpdateSetting(cleanEnvironment), cleanEnvironment);
+const inheritedHookEnvironment = {
+  NODE_OPTIONS: '--trace-warnings --require="/Users/example/.codex/.tmp/codexfast/main-process-hook.cjs"',
+};
+assert.deepEqual(childEnvWithAutomaticUpdateSetting(inheritedHookEnvironment), {
+  NODE_OPTIONS: "--trace-warnings",
+});
+assert.equal(
+  childEnvWithAutomaticUpdateSetting({
+    NODE_OPTIONS: '--require="/Users/example/.codex/.tmp/codexfast/main-process-hook.cjs"',
+  }).NODE_OPTIONS,
+  undefined,
+);
+
+const defaultPatcherSourceLiteral = preparedSource.match(/const __PATCHER_SOURCE__ = ((?:"(?:[^"\\]|\\.)*"));/)?.[1];
+assert.ok(defaultPatcherSourceLiteral, "prepared launcher should embed runtime patcher source");
+const defaultPatcherSource = eval(defaultPatcherSourceLiteral);
+assert.doesNotMatch(defaultPatcherSource, /\.\.\.UPDATE_TARGET_SPECS/);
+const applyDefaultRuntimePatchesToBody = new Function(`${defaultPatcherSource}\nreturn applyRuntimePatchesToBody;`)();
+const automaticUpdateSettingsBody =
+  "preventSleepWhileRunning:r({agentAccess:`read-write`,default:!1,description:`Whether the machine stays awake while Codex is running`,key:`preventSleepWhileRunning`,schema:t}),";
+const automaticUpdateSettingsPatch = applyDefaultRuntimePatchesToBody(
+  "app://-/assets/app-main.js",
+  automaticUpdateSettingsBody,
+);
+assert.equal(automaticUpdateSettingsPatch.content, automaticUpdateSettingsBody);
+assert.ok(!automaticUpdateSettingsPatch.patchedLabels.includes("Disable automatic updates schema"));
 
 const modelOverridePrepared = run(["prepare"], {
   CODEXFAST_MODEL_ID: "gpt-5.6",
