@@ -44,6 +44,8 @@
 | `26.818.31338+6892` | 使用 `codexfast 0.74.1` 对 Sparkle 待安装包中的 6,848 个 JavaScript 文件实扫；默认关闭模型覆盖，运行时不命中任何模型改写目标，Fast 设置、`/fast`、3 类 service tier、自动更新 setting/schema 均命中，扫描错误为 0；本轮仅记录静态实扫结果，不计入隔离运行时 ready 验证 |
 | `26.818.61809+7019` | 使用 `codexfast 0.76.0` 对已安装 App 实测；默认关闭模型覆盖且排除自动更新目标，`/fast`、service tier allowance、request allowance 和 conversation fallback 均命中；隔离运行时启动成功到达 ready，真实 App Server 环境中未发现 `main-process-hook.cjs` |
 | `26.820.60940+7119` | 使用 `codexfast 0.76.0` 对 Sparkle 待安装包实测；默认关闭模型覆盖且排除自动更新目标，`/fast`、service tier allowance、request allowance 和 conversation fallback 均命中；隔离运行时启动成功到达 ready，真实 App Server 环境中未发现 `main-process-hook.cjs` |
+| `26.825.31414+7287` | 使用 `codexfast 0.77.0` 对 Sparkle 待安装包实测；默认关闭模型覆盖且排除自动更新目标，`/fast`、service tier allowance、request allowance 和 conversation fallback 均命中；隔离运行时启动成功到达 ready，真实 App Server 环境中未发现 `main-process-hook.cjs` |
+| `26.825.32147+7303` | 使用 `codexfast 0.77.0` 对 Sparkle 待安装包实测；默认关闭模型覆盖且排除自动更新目标，`/fast`、service tier allowance、request allowance 和 conversation fallback 均命中；隔离运行时启动成功到达 ready，真实 App Server 环境中未发现 `main-process-hook.cjs` |
 
 版本表记录的是验证时的客户端行为，不代表同一版本下所有账号、中转站或服务端配置都会得到相同结果。
 
