@@ -46,6 +46,8 @@
 | `26.820.60940+7119` | 使用 `codexfast 0.76.0` 对 Sparkle 待安装包实测；默认关闭模型覆盖且排除自动更新目标，`/fast`、service tier allowance、request allowance 和 conversation fallback 均命中；隔离运行时启动成功到达 ready，真实 App Server 环境中未发现 `main-process-hook.cjs` |
 | `26.825.31414+7287` | 使用 `codexfast 0.77.0` 对 Sparkle 待安装包实测；默认关闭模型覆盖且排除自动更新目标，`/fast`、service tier allowance、request allowance 和 conversation fallback 均命中；隔离运行时启动成功到达 ready，真实 App Server 环境中未发现 `main-process-hook.cjs` |
 | `26.825.32147+7303` | 使用 `codexfast 0.77.0` 对 Sparkle 待安装包实测；默认关闭模型覆盖且排除自动更新目标，`/fast`、service tier allowance、request allowance 和 conversation fallback 均命中；隔离运行时启动成功到达 ready，真实 App Server 环境中未发现 `main-process-hook.cjs` |
+| `26.908.70816+9275` | 使用 `codexfast 0.79.0` 扫描已安装 App 的 7,415 个 JavaScript 文件；Fast 设置、`/fast`、service tier allowance 和 request allowance 均命中，扫描错误为 0；隔离运行时到达 ready，外部路径 App Server 环境中未发现 `main-process-hook.cjs`。Composer Speed 菜单与 conversation fallback 的旧签名未命中，正式账号或中转站的 Fast 请求尚未验证 |
+| `26.911.61220+9647` | 使用 `codexfast 0.79.0` 扫描已安装 App 的 11,001 个 JavaScript 文件；Fast 设置、`/fast`、service tier allowance 和 request allowance 均命中，扫描错误为 0；隔离运行时和 App Server 环境检查通过。正式会话经 `relaunch` 启动且 App Server 无 `main-process-hook.cjs`，但服务端 Fast 请求尚未验证 |
 
 版本表记录的是验证时的客户端行为，不代表同一版本下所有账号、中转站或服务端配置都会得到相同结果。
 
@@ -108,7 +110,7 @@ node bin/launch-codexfast-current.mjs relaunch --dry-run
 - `CODEXFAST_PACKAGE_TARBALL`：使用本地 `codexfast` tarball。
 - `CODEXFAST_DEBUG_RUNTIME`：启用上游运行时调试输出。
 
-上游自动更新钩子通过 `NODE_OPTIONS=--require=.../main-process-hook.cjs` 注入 App。App Server 会复制主进程的完整环境，导致终端命令、Chrome 接管和 Computer Use 等子进程也加载该钩子。本项目会让 `childEnvWithAutomaticUpdateSetting()` 不再新增钩子，并清除可能从旧会话继承的 `main-process-hook.cjs` 参数，同时保留其他 `NODE_OPTIONS`；CDP 运行时目标也会排除 `UPDATE_TARGET_SPECS`，自动更新保持官方默认行为。修改相关逻辑时必须运行 `npm test`，确认准备后的启动器不再注入钩子且不再应用自动更新界面补丁；还要运行 `isolated-test`，确认输出 `Isolated child environment self-test passed`。
+上游自动更新钩子通过 `NODE_OPTIONS=--require=.../main-process-hook.cjs` 注入 App。App Server 会复制主进程的完整环境，导致终端命令、Chrome 接管和 Computer Use 等子进程也加载该钩子。本项目会让 `childEnvWithAutomaticUpdateSetting()` 不再新增钩子，并清除可能从旧会话继承的 `main-process-hook.cjs` 参数，同时保留其他 `NODE_OPTIONS`；CDP 运行时目标也会排除 `UPDATE_TARGET_SPECS`，自动更新保持官方默认行为。App Server 可由 App 资源目录外的 `codex` 可执行文件启动，隔离测试按父进程和 `app-server` 命令识别它。修改相关逻辑时必须运行 `npm test`，确认准备后的启动器不再注入钩子且不再应用自动更新界面补丁；还要运行 `isolated-test`，确认输出 `Isolated child environment self-test passed`。
 
 ## 开源与发布检查
 

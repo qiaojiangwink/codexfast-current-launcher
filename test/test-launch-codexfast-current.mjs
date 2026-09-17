@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const launcher = new URL("../bin/launch-codexfast-current.mjs", import.meta.url).pathname;
+const launcher = fileURLToPath(new URL("../bin/launch-codexfast-current.mjs", import.meta.url));
 const scriptDir = path.dirname(launcher);
 const bundledTarball = path.join(scriptDir, "vendor", "codexfast-0.48.0.tgz");
 

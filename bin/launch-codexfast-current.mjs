@@ -4,8 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { spawn, spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const scriptDir = path.dirname(new URL(import.meta.url).pathname);
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const plistBuddy = "/usr/libexec/PlistBuddy";
 
 function appLooksLikeCodex(bundlePath) {
@@ -94,15 +95,21 @@ function classifyCodexProcesses(processes) {
   };
 }
 
-function readCodexProcesses() {
+function readProcesses() {
   const ps = spawnSync("ps", ["ax", "-o", "pid=", "-o", "ppid=", "-o", "state=", "-o", "command="], { encoding: "utf8" });
-  if (ps.status !== 0) return classifyCodexProcesses([]);
-  return classifyCodexProcesses(
-    (ps.stdout ?? "")
+  if (ps.status !== 0) return [];
+  return (ps.stdout ?? "")
     .split("\n")
-      .map(parseProcessLine)
-      .filter(Boolean),
-  );
+    .map(parseProcessLine)
+    .filter(Boolean);
+}
+
+function readCodexProcesses() {
+  return classifyCodexProcesses(readProcesses());
+}
+
+function isAppServerChild(processInfo, mainPid) {
+  return processInfo.ppid === mainPid && /(?:^|\s)app-server(?:\s|$)/.test(processInfo.command);
 }
 
 function printProcessList(title, processes) {
@@ -464,17 +471,12 @@ function verifyIsolatedChildEnvironment(profile) {
   let appServer = null;
   const deadline = Date.now() + 5_000;
   while (Date.now() < deadline) {
-    const processes = readCodexProcesses().all;
+    const processes = readProcesses();
     isolatedMain = processes.find(
       (processInfo) => isMainCodexProcess(processInfo) && processInfo.command.includes(`--user-data-dir=${profile}`),
     );
     appServer = isolatedMain
-      ? processes.find(
-          (processInfo) =>
-            processInfo.ppid === isolatedMain.pid &&
-            processInfo.command.includes(`${appBundle}/Contents/Resources/codex`) &&
-            processInfo.command.includes("app-server"),
-        )
+      ? processes.find((processInfo) => isAppServerChild(processInfo, isolatedMain.pid))
       : null;
     if (appServer) break;
     sleep(250);
@@ -628,6 +630,13 @@ function selftestProcessClassification() {
   ].filter(Boolean));
   if (withMain.main.length !== 1 || withMain.support.length !== 1) {
     throw new Error("main Codex executable should be classified as the main process");
+  }
+
+  const externalAppServer = parseProcessLine(
+    "5917 5916 S /Users/example/.local/share/codex-history-fix/bin/codex -c features.code_mode_host=true app-server --listen stdio://",
+  );
+  if (!isAppServerChild(externalAppServer, 5916) || isAppServerChild(externalAppServer, 2087)) {
+    throw new Error("an external App Server executable should be recognized only as a child of the isolated main process");
   }
 
   console.log("Process classification self-test passed");
