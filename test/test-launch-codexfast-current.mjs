@@ -49,7 +49,8 @@ const preparedLauncher = output(prepared).match(/"preparedLauncher": "([^"]+)"/)
 assert.ok(preparedLauncher, output(prepared));
 const preparedSource = fs.readFileSync(preparedLauncher, "utf8");
 assert.doesNotMatch(preparedSource, /codexfast-model-override-current-extension/);
-assert.doesNotMatch(preparedSource, /codexfast-current-model-filter-bridge/);
+assert.match(preparedSource, /codexfast-service-tier-request-personal-access-token-extension/);
+assert.match(preparedSource, /codexfast-runtime-extension-filter-bridge/);
 assert.match(
   preparedSource,
   /function childEnvWithAutomaticUpdateSetting\(env = process\.env\) \{\n    \/\/ codexfast-current: remove an inherited codexfast hook/,
@@ -92,6 +93,48 @@ const automaticUpdateSettingsPatch = applyDefaultRuntimePatchesToBody(
 assert.equal(automaticUpdateSettingsPatch.content, automaticUpdateSettingsBody);
 assert.ok(!automaticUpdateSettingsPatch.patchedLabels.includes("Disable automatic updates schema"));
 
+const personalAccessTokenServiceTierBody =
+  "async function Z$i(e,t){let n=await q$i(e,t);if(n!==`chatgpt`&&n!==`personalAccessToken`)return!1;let r=await XMe(e,t,{priority:`critical`});return e.query.setData(yd,{authMethod:n,hostId:t},r),r.requirements?.featureRequirements?.fast_mode!==!1}";
+const personalAccessTokenServiceTierPatch = applyDefaultRuntimePatchesToBody(
+  "app://-/assets/app-initial.js",
+  personalAccessTokenServiceTierBody,
+);
+assert.notEqual(personalAccessTokenServiceTierPatch.content, personalAccessTokenServiceTierBody);
+assert.match(
+  personalAccessTokenServiceTierPatch.content,
+  /if\(n!==`chatgpt`&&n!==`personalAccessToken`\)return!0/,
+);
+assert.ok(personalAccessTokenServiceTierPatch.patchedLabels.includes("Speed service tier request allowance"));
+
+const runtimePatcherSourceForVersionSource = preparedSource
+  .match(
+    /function runtimePatcherSourceForVersion\(patcherSource, versionKey\) \{[\s\S]*?\n\}\nasync function enableRuntimePatchInterception/,
+  )?.[0]
+  .replace(/\nasync function enableRuntimePatchInterception$/, "");
+assert.ok(runtimePatcherSourceForVersionSource, "prepared launcher should contain the runtime target filter");
+const runtimePatcherSourceForVersion = new Function(
+  [
+    'const runtimePatchNoPluginTargetsVersionKeys = new Set(["test-version"]);',
+    'const runtimePatchPluginTargetIdPrefixes = ["plugins-"];',
+    "const runtimePatchOfficialGpt56TargetIds = new Set();",
+    "const usesOfficialGpt56 = () => false;",
+    runtimePatcherSourceForVersionSource,
+    "return runtimePatcherSourceForVersion;",
+  ].join("\n"),
+)();
+const filteredPatcherSource = runtimePatcherSourceForVersion(defaultPatcherSource, "test-version");
+const applyFilteredRuntimePatchesToBody = new Function(`${filteredPatcherSource}\nreturn applyRuntimePatchesToBody;`)();
+const filteredPersonalAccessTokenPatch = applyFilteredRuntimePatchesToBody(
+  "app://-/assets/app-initial.js",
+  personalAccessTokenServiceTierBody,
+);
+assert.notEqual(filteredPersonalAccessTokenPatch.content, personalAccessTokenServiceTierBody);
+assert.match(
+  filteredPersonalAccessTokenPatch.content,
+  /if\(n!==`chatgpt`&&n!==`personalAccessToken`\)return!0/,
+);
+assert.ok(filteredPersonalAccessTokenPatch.patchedLabels.includes("Speed service tier request allowance"));
+
 const modelOverridePrepared = run(["prepare"], {
   CODEXFAST_MODEL_ID: "gpt-5.6",
   CODEXFAST_MODEL_DISPLAY_NAME: "GPT-5.6",
@@ -101,7 +144,7 @@ const modelOverridePreparedLauncher = output(modelOverridePrepared).match(/"prep
 assert.ok(modelOverridePreparedLauncher, output(modelOverridePrepared));
 const modelOverridePreparedSource = fs.readFileSync(modelOverridePreparedLauncher, "utf8");
 assert.match(modelOverridePreparedSource, /codexfast-model-override-current-extension/);
-assert.match(modelOverridePreparedSource, /codexfast-current-model-filter-bridge/);
+assert.match(modelOverridePreparedSource, /codexfast-runtime-extension-filter-bridge/);
 
 const patcherSourceLiteral = modelOverridePreparedSource.match(/const __PATCHER_SOURCE__ = ((?:"(?:[^"\\]|\\.)*"));/)?.[1];
 assert.ok(patcherSourceLiteral, "prepared launcher should embed runtime patcher source");

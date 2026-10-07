@@ -6,7 +6,7 @@
 
 ## 当前兼容情况
 
-以下是截至 2026-09-17 的验证结果：
+以下是截至 2026-10-06 的验证结果：
 
 | 客户端版本 | 客户端表现 | 本项目的作用 |
 | --- | --- | --- |
@@ -42,6 +42,7 @@
 | `26.825.32147+7303` | 上游模型列表保持原样，Fast 相关本地判断仍存在 | 使用 `codexfast 0.77.0` 对 Sparkle 待安装包实测；默认不改写模型列表，`/fast` 和 3 类 Service Tier 目标均能命中，隔离启动到达 ready，App Server 环境检查通过 |
 | `26.908.70816+9275` | Fast 设置、`/fast` 和 Service Tier 判断仍存在；部分旧版菜单和会话回退签名不再命中 | 使用 `codexfast 0.79.0` 扫描已安装 App 的 7,415 个 JavaScript 文件，Fast 设置、`/fast` 和两类 Service Tier 目标命中；隔离启动到达 ready，外部路径 App Server 的环境检查通过。未验证正式账号或中转站的 Fast 请求是否被服务端接受 |
 | `26.911.61220+9647` | Fast 设置、`/fast` 和 Service Tier 判断仍存在 | 使用 `codexfast 0.79.0` 扫描已安装 App 的 11,001 个 JavaScript 文件，四类 Fast 目标命中且扫描错误为 0；隔离启动和 App Server 环境检查通过，正式会话的脚本启动链正常。服务端 Fast 请求尚未验证 |
+| `26.930.61225+13232` | `/fast` 和 Service Tier 判断仍存在；请求许可判断新增 `personalAccessToken` 分支，主界面资源改为延迟加载 | 使用 `codexfast 0.79.0` 加本项目兼容扩展实测；隔离启动到达 ready，延迟资源加载后命中两类 Service Tier 目标和 `Fast slash command`，App Server 环境检查通过。未验证正式账号或中转站的 Fast 请求是否被服务端接受 |
 
 项目会根据客户端更新继续适配。每次更新后的实际支持情况，以仓库最新说明和运行时输出为准。
 
@@ -87,6 +88,8 @@ node bin/launch-codexfast-current.mjs status
 ## 确认是否生效
 
 运行 `relaunch` 后，终端会显示 `Patched targets:`。具体条目会随 App 版本变化，只要最终出现 `Runtime launch completed.`，就说明临时运行时已经启动。
+
+新版 App 可能在 `Runtime launch completed.` 之后才加载主界面资源，因此最初的 `Patched targets:` 可能为空。维护检查可用 `CODEXFAST_DEBUG_RUNTIME=1 node bin/launch-codexfast-current.mjs isolated-test` 观察延迟资源的实际命中结果；日常启动不需要开启调试输出。
 
 随后可在 App 中检查 Fast 模式。默认运行时的 `Patched targets:` 不应出现 `GPT-... model` 条目，模型菜单应保持为上游实际返回的内容。
 

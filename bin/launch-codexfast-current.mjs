@@ -291,8 +291,10 @@ function addCurrentModelRuntimePatch(source) {
   return replacePatcherSource(source, (patcherSource) => `${patcherSource}${currentModelRuntimePatchSource(modelId, displayName)}`);
 }
 
-function preserveCurrentModelPatchAfterTargetFiltering(source) {
-  if (!source.includes("codexfast-model-override-current-extension")) return source;
+function preserveRuntimePatchExtensionsAfterTargetFiltering(source) {
+  const hasServiceTierExtension = source.includes("codexfast-service-tier-request-personal-access-token-extension");
+  const hasCurrentModelExtension = source.includes("codexfast-model-override-current-extension");
+  if (!hasServiceTierExtension && !hasCurrentModelExtension) return source;
   const before = [
     "  return { content, matchedLabels, patchedLabels, alreadyPatchedLabels };",
     "};`;",
@@ -301,17 +303,28 @@ function preserveCurrentModelPatchAfterTargetFiltering(source) {
   ].join("\n");
   const after = [
     "  const codexfastFilteredResult = { content, matchedLabels, patchedLabels, alreadyPatchedLabels };",
-    "  // codexfast-current-model-filter-bridge",
-    '  return typeof codexfastApplyCurrentModelRuntimePatchesToBody !== "function" || typeof codexfastMergeRuntimePatchResults !== "function"',
-    "    ? codexfastFilteredResult",
-    "    : codexfastMergeRuntimePatchResults(codexfastFilteredResult, codexfastApplyCurrentModelRuntimePatchesToBody(_resourcePath, content));",
+    "  // codexfast-runtime-extension-filter-bridge",
+    "  const codexfastMergeFilteredResult = (baseResult, extensionResult) => ({",
+    "    content: extensionResult.content,",
+    "    matchedLabels: [...baseResult.matchedLabels, ...extensionResult.matchedLabels],",
+    "    patchedLabels: [...baseResult.patchedLabels, ...extensionResult.patchedLabels],",
+    "    alreadyPatchedLabels: [...baseResult.alreadyPatchedLabels, ...extensionResult.alreadyPatchedLabels],",
+    "  });",
+    "  let codexfastExtendedResult = codexfastFilteredResult;",
+    '  if (typeof codexfastApplyServiceTierRequestPatPatch === "function" && !codexfastExtendedResult.matchedLabels.includes("Speed service tier request allowance")) {',
+    "    codexfastExtendedResult = codexfastMergeFilteredResult(codexfastExtendedResult, codexfastApplyServiceTierRequestPatPatch(_resourcePath, codexfastExtendedResult.content));",
+    "  }",
+    '  if (typeof codexfastApplyCurrentModelRuntimePatchesToBody === "function") {',
+    "    codexfastExtendedResult = codexfastMergeFilteredResult(codexfastExtendedResult, codexfastApplyCurrentModelRuntimePatchesToBody(_resourcePath, codexfastExtendedResult.content));",
+    "  }",
+    "  return codexfastExtendedResult;",
     "};`;",
     "}",
     "async function enableRuntimePatchInterception",
   ].join("\n");
   const nextSource = source.replace(before, after);
   if (nextSource === source) {
-    throw new Error("Could not preserve the current model patch after codexfast target filtering.");
+    throw new Error("Could not preserve runtime patch extensions after codexfast target filtering.");
   }
   return nextSource;
 }
@@ -369,6 +382,46 @@ function disableAutomaticUpdateRuntimeTargets(source) {
   });
 }
 
+function serviceTierRequestAllowanceRuntimePatchSource() {
+  return [
+    "",
+    "// codexfast-service-tier-request-personal-access-token-extension",
+    'const CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL = "Speed service tier request allowance";',
+    'const CODEXFAST_SERVICE_TIER_REQUEST_PAT_GUARDED_SIGNATURE = /(async function [A-Za-z_$][\\w$]*\\(([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*)\\)\\{let ([A-Za-z_$][\\w$]*)=await [A-Za-z_$][\\w$]*\\(\\2,\\3\\);if\\(\\4!==`chatgpt`&&\\4!==`personalAccessToken`\\)return)!1(;let [A-Za-z_$][\\w$]*=await [A-Za-z_$][\\w$]*\\(\\2,\\3,\\{priority:`critical`\\}\\);return \\2\\.query\\.setData\\([A-Za-z_$][\\w$]*,\\{authMethod:\\4,hostId:\\3\\},[A-Za-z_$][\\w$]*\\),[A-Za-z_$][\\w$]*\\.requirements\\?\\.featureRequirements\\?\\.fast_mode!==!1\\})/;',
+    'const CODEXFAST_SERVICE_TIER_REQUEST_PAT_PATCHED_SIGNATURE = /(async function [A-Za-z_$][\\w$]*\\(([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*)\\)\\{let ([A-Za-z_$][\\w$]*)=await [A-Za-z_$][\\w$]*\\(\\2,\\3\\);if\\(\\4!==`chatgpt`&&\\4!==`personalAccessToken`\\)return)!0(;let [A-Za-z_$][\\w$]*=await [A-Za-z_$][\\w$]*\\(\\2,\\3,\\{priority:`critical`\\}\\);return \\2\\.query\\.setData\\([A-Za-z_$][\\w$]*,\\{authMethod:\\4,hostId:\\3\\},[A-Za-z_$][\\w$]*\\),[A-Za-z_$][\\w$]*\\.requirements\\?\\.featureRequirements\\?\\.fast_mode!==!1\\})/;',
+    "function codexfastApplyServiceTierRequestPatPatch(_resourcePath, body) {",
+    "    const guarded = CODEXFAST_SERVICE_TIER_REQUEST_PAT_GUARDED_SIGNATURE.test(body);",
+    "    const patched = CODEXFAST_SERVICE_TIER_REQUEST_PAT_PATCHED_SIGNATURE.test(body);",
+    "    if (!guarded && !patched) return { content: body, matchedLabels: [], patchedLabels: [], alreadyPatchedLabels: [] };",
+    '    const content = guarded ? body.replace(CODEXFAST_SERVICE_TIER_REQUEST_PAT_GUARDED_SIGNATURE, "$1!0$5") : body;',
+    "    return {",
+    "        content,",
+    "        matchedLabels: [CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL],",
+    "        patchedLabels: guarded ? [CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL] : [],",
+    "        alreadyPatchedLabels: patched ? [CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL] : [],",
+    "    };",
+    "}",
+    "const codexfastPreviousApplyRuntimePatchesToBodyForPat = applyRuntimePatchesToBody;",
+    "applyRuntimePatchesToBody = function(resourcePath, body) {",
+    "    const baseResult = codexfastPreviousApplyRuntimePatchesToBodyForPat(resourcePath, body);",
+    "    if (baseResult.matchedLabels.includes(CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL)) return baseResult;",
+    "    const extensionResult = codexfastApplyServiceTierRequestPatPatch(resourcePath, baseResult.content);",
+    "    return {",
+    "        content: extensionResult.content,",
+    "        matchedLabels: [...baseResult.matchedLabels, ...extensionResult.matchedLabels],",
+    "        patchedLabels: [...baseResult.patchedLabels, ...extensionResult.patchedLabels],",
+    "        alreadyPatchedLabels: [...baseResult.alreadyPatchedLabels, ...extensionResult.alreadyPatchedLabels],",
+    "    };",
+    "};",
+    "",
+  ].join("\n");
+}
+
+function addServiceTierRequestAllowanceRuntimePatch(source) {
+  if (source.includes("codexfast-service-tier-request-personal-access-token-extension")) return source;
+  return replacePatcherSource(source, (patcherSource) => `${patcherSource}${serviceTierRequestAllowanceRuntimePatchSource()}`);
+}
+
 function findBundledCodexfastTarball() {
   const vendorDir = path.join(scriptDir, "vendor");
   if (!fs.existsSync(vendorDir)) return null;
@@ -422,8 +475,9 @@ function prepareLauncher({ isolatedProfile = null } = {}) {
   source = addExecutableName(source, info.executable);
   source = addModelOverride(source);
   source = disableAutomaticUpdateRuntimeTargets(source);
+  source = addServiceTierRequestAllowanceRuntimePatch(source);
   source = addCurrentModelRuntimePatch(source);
-  source = preserveCurrentModelPatchAfterTargetFiltering(source);
+  source = preserveRuntimePatchExtensionsAfterTargetFiltering(source);
   source = addUserDataDir(source, isolatedProfile);
 
   fs.writeFileSync(preparedLauncher, source, "utf8");
@@ -520,12 +574,17 @@ async function isolatedTest() {
 
   let output = "";
   let settled = false;
+  let readySeen = false;
   let timeout = null;
+  let cleanupTimer = null;
+  const requestedSettleMs = Number.parseInt(process.env.CODEXFAST_ISOLATED_SETTLE_MS ?? "3000", 10);
+  const settleMs = Number.isFinite(requestedSettleMs) ? Math.min(Math.max(requestedSettleMs, 0), 15_000) : 3_000;
 
   const finish = (code) => {
     if (settled) return;
     settled = true;
     if (timeout) clearTimeout(timeout);
+    if (cleanupTimer) clearTimeout(cleanupTimer);
     killProcessesUsingProfile(profile);
     fs.rmSync(profile, { recursive: true, force: true });
     if (code !== 0) process.exitCode = code;
@@ -535,7 +594,8 @@ async function isolatedTest() {
     const text = chunk.toString();
     process.stdout.write(text);
     output += text;
-    if (!settled && output.includes("Runtime launch completed.")) {
+    if (!settled && !readySeen && output.includes("Runtime launch completed.")) {
+      readySeen = true;
       try {
         verifyIsolatedChildEnvironment(profile);
       } catch (error) {
@@ -544,9 +604,12 @@ async function isolatedTest() {
         finish(1);
         return;
       }
-      console.log("\nIsolated runtime patch test reached ready state; cleaning up test app.");
-      child.kill("SIGINT");
-      finish(0);
+      console.log(`\nIsolated runtime patch test reached ready state; waiting ${settleMs} ms for deferred resources.`);
+      cleanupTimer = setTimeout(() => {
+        console.log("Isolated runtime patch observation complete; cleaning up test app.");
+        child.kill("SIGINT");
+        finish(0);
+      }, settleMs);
     }
   };
 

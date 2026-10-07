@@ -48,6 +48,7 @@
 | `26.825.32147+7303` | 使用 `codexfast 0.77.0` 对 Sparkle 待安装包实测；默认关闭模型覆盖且排除自动更新目标，`/fast`、service tier allowance、request allowance 和 conversation fallback 均命中；隔离运行时启动成功到达 ready，真实 App Server 环境中未发现 `main-process-hook.cjs` |
 | `26.908.70816+9275` | 使用 `codexfast 0.79.0` 扫描已安装 App 的 7,415 个 JavaScript 文件；Fast 设置、`/fast`、service tier allowance 和 request allowance 均命中，扫描错误为 0；隔离运行时到达 ready，外部路径 App Server 环境中未发现 `main-process-hook.cjs`。Composer Speed 菜单与 conversation fallback 的旧签名未命中，正式账号或中转站的 Fast 请求尚未验证 |
 | `26.911.61220+9647` | 使用 `codexfast 0.79.0` 扫描已安装 App 的 11,001 个 JavaScript 文件；Fast 设置、`/fast`、service tier allowance 和 request allowance 均命中，扫描错误为 0；隔离运行时和 App Server 环境检查通过。正式会话经 `relaunch` 启动且 App Server 无 `main-process-hook.cjs`，但服务端 Fast 请求尚未验证 |
+| `26.930.61225+13232` | 使用 `codexfast 0.79.0` 加本项目扩展实测；新版请求许可函数接受 `chatgpt` 和 `personalAccessToken`，本项目补充该签名并保持自定义 Provider 回退。隔离运行时到达 ready，延迟加载后命中 service tier allowance、request allowance 和 `Fast slash command`，App Server 环境检查通过；服务端 Fast 请求尚未验证 |
 
 版本表记录的是验证时的客户端行为，不代表同一版本下所有账号、中转站或服务端配置都会得到相同结果。
 
@@ -96,8 +97,8 @@ node bin/launch-codexfast-current.mjs relaunch --dry-run
 
 1. 执行 `status`，确认 App 路径、真实可执行文件名、版本号和构建号读取正确。
 2. 执行 `prepare`，确认 CDP frame 和 runtime patch body 自测通过。
-3. 执行 `isolated-test`，确认输出 `Runtime launch completed.` 并完成清理。
-4. 检查 `Patched targets:`。默认启动不应出现模型改写目标；Fast 相关条目会随 App 代码变化，不应在用户文档中承诺固定列表。
+3. 执行 `isolated-test`，确认输出 `Runtime launch completed.`，等待延迟资源观察窗口结束并完成清理。
+4. 必要时使用 `CODEXFAST_DEBUG_RUNTIME=1` 检查延迟加载资源的命中结果。默认启动不应出现模型改写目标；Fast 相关条目会随 App 代码变化，不应在用户文档中承诺固定列表。
 5. 仅在隔离测试通过后，使用 `relaunch` 验证真实 App。
 
 如果 `prepare` 通过但某个界面入口缺失，应检查新版渲染代码中的模型列表、Fast 命令和 service tier 判断是否改变。优先更新精确匹配逻辑，并为变化补充回归测试。
