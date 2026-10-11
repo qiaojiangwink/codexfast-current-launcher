@@ -311,6 +311,9 @@ function preserveRuntimePatchExtensionsAfterTargetFiltering(source) {
     "    alreadyPatchedLabels: [...baseResult.alreadyPatchedLabels, ...extensionResult.alreadyPatchedLabels],",
     "  });",
     "  let codexfastExtendedResult = codexfastFilteredResult;",
+    '  if (typeof codexfastApplyServiceTierAccessPatPatch === "function" && !codexfastExtendedResult.matchedLabels.includes("Speed service tier allowance")) {',
+    "    codexfastExtendedResult = codexfastMergeFilteredResult(codexfastExtendedResult, codexfastApplyServiceTierAccessPatPatch(_resourcePath, codexfastExtendedResult.content));",
+    "  }",
     '  if (typeof codexfastApplyServiceTierRequestPatPatch === "function" && !codexfastExtendedResult.matchedLabels.includes("Speed service tier request allowance")) {',
     "    codexfastExtendedResult = codexfastMergeFilteredResult(codexfastExtendedResult, codexfastApplyServiceTierRequestPatPatch(_resourcePath, codexfastExtendedResult.content));",
     "  }",
@@ -386,32 +389,60 @@ function serviceTierRequestAllowanceRuntimePatchSource() {
   return [
     "",
     "// codexfast-service-tier-request-personal-access-token-extension",
+    'const CODEXFAST_SERVICE_TIER_ACCESS_PAT_LABEL = "Speed service tier allowance";',
     'const CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL = "Speed service tier request allowance";',
+    'const CODEXFAST_SERVICE_TIER_ACCESS_PAT_GUARDED_SIGNATURE = /(([A-Za-z_$][\\w$]*)=[A-Za-z_$][\\w$]*\\?\\.authMethod===`chatgpt`\\|\\|[A-Za-z_$][\\w$]*\\?\\.authMethod===`personalAccessToken`[^;]*;[^]{0,700}?let\\{data:([A-Za-z_$][\\w$]*),isPending:([A-Za-z_$][\\w$]*)\\}=[^;]+,([A-Za-z_$][\\w$]*)=!![A-Za-z_$][\\w$]*\\?\\.isLoading\\|\\|\\2&&\\4,([A-Za-z_$][\\w$]*);[^]{0,250}?\\?\\(\\6=)\\2&&!\\5&&\\3!=null\\?([A-Za-z_$][\\w$]*)\\(\\3\\):null(,)/;',
+    'const CODEXFAST_SERVICE_TIER_ACCESS_PAT_PATCHED_SIGNATURE = /([A-Za-z_$][\\w$]*=[A-Za-z_$][\\w$]*\\?\\.authMethod===`chatgpt`\\|\\|[A-Za-z_$][\\w$]*\\?\\.authMethod===`personalAccessToken`[^;]*;[^]{0,700}?let\\{data:([A-Za-z_$][\\w$]*),isPending:[A-Za-z_$][\\w$]*\\}=[^;]+,([A-Za-z_$][\\w$]*)=!![A-Za-z_$][\\w$]*\\?\\.isLoading\\|\\|[A-Za-z_$][\\w$]*&&[A-Za-z_$][\\w$]*,[A-Za-z_$][\\w$]*;[^]{0,250}?\\?\\([A-Za-z_$][\\w$]*=)!\\3&&\\([A-Za-z_$][\\w$]*\\?\\2!=null\\?[A-Za-z_$][\\w$]*\\(\\2\\):null:\\{fast:!0,ultrafast:!1\\}\\)(,)/;',
     'const CODEXFAST_SERVICE_TIER_REQUEST_PAT_GUARDED_SIGNATURE = /(async function [A-Za-z_$][\\w$]*\\(([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*)\\)\\{let ([A-Za-z_$][\\w$]*)=await [A-Za-z_$][\\w$]*\\(\\2,\\3\\);if\\(\\4!==`chatgpt`&&\\4!==`personalAccessToken`\\)return)!1(;let [A-Za-z_$][\\w$]*=await [A-Za-z_$][\\w$]*\\(\\2,\\3,\\{priority:`critical`\\}\\);return \\2\\.query\\.setData\\([A-Za-z_$][\\w$]*,\\{authMethod:\\4,hostId:\\3\\},[A-Za-z_$][\\w$]*\\),[A-Za-z_$][\\w$]*\\.requirements\\?\\.featureRequirements\\?\\.fast_mode!==!1\\})/;',
     'const CODEXFAST_SERVICE_TIER_REQUEST_PAT_PATCHED_SIGNATURE = /(async function [A-Za-z_$][\\w$]*\\(([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*)\\)\\{let ([A-Za-z_$][\\w$]*)=await [A-Za-z_$][\\w$]*\\(\\2,\\3\\);if\\(\\4!==`chatgpt`&&\\4!==`personalAccessToken`\\)return)!0(;let [A-Za-z_$][\\w$]*=await [A-Za-z_$][\\w$]*\\(\\2,\\3,\\{priority:`critical`\\}\\);return \\2\\.query\\.setData\\([A-Za-z_$][\\w$]*,\\{authMethod:\\4,hostId:\\3\\},[A-Za-z_$][\\w$]*\\),[A-Za-z_$][\\w$]*\\.requirements\\?\\.featureRequirements\\?\\.fast_mode!==!1\\})/;',
-    "function codexfastApplyServiceTierRequestPatPatch(_resourcePath, body) {",
-    "    const guarded = CODEXFAST_SERVICE_TIER_REQUEST_PAT_GUARDED_SIGNATURE.test(body);",
-    "    const patched = CODEXFAST_SERVICE_TIER_REQUEST_PAT_PATCHED_SIGNATURE.test(body);",
+    'const CODEXFAST_SERVICE_TIER_REQUEST_ACCESS_PAT_GUARDED_SIGNATURE = /(async function [A-Za-z_$][\\w$]*\\(([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*)\\)\\{let ([A-Za-z_$][\\w$]*)=await [A-Za-z_$][\\w$]*\\(\\2,\\3\\);if\\(\\4!==`chatgpt`&&\\4!==`personalAccessToken`\\)return )null(;let [A-Za-z_$][\\w$]*=await [A-Za-z_$][\\w$]*\\(\\2,\\3,\\{priority:`critical`\\}\\);return \\2\\.query\\.setData\\([A-Za-z_$][\\w$]*,\\{authMethod:\\4,hostId:\\3\\},[A-Za-z_$][\\w$]*\\),[A-Za-z_$][\\w$]*\\([A-Za-z_$][\\w$]*\\)\\})/;',
+    'const CODEXFAST_SERVICE_TIER_REQUEST_ACCESS_PAT_PATCHED_SIGNATURE = /(async function [A-Za-z_$][\\w$]*\\(([A-Za-z_$][\\w$]*),([A-Za-z_$][\\w$]*)\\)\\{let ([A-Za-z_$][\\w$]*)=await [A-Za-z_$][\\w$]*\\(\\2,\\3\\);if\\(\\4!==`chatgpt`&&\\4!==`personalAccessToken`\\)return )\\{fast:!0,ultrafast:!1\\}(;let [A-Za-z_$][\\w$]*=await [A-Za-z_$][\\w$]*\\(\\2,\\3,\\{priority:`critical`\\}\\);return \\2\\.query\\.setData\\([A-Za-z_$][\\w$]*,\\{authMethod:\\4,hostId:\\3\\},[A-Za-z_$][\\w$]*\\),[A-Za-z_$][\\w$]*\\([A-Za-z_$][\\w$]*\\)\\})/;',
+    "function codexfastApplyServiceTierAccessPatPatch(_resourcePath, body) {",
+    "    const guarded = CODEXFAST_SERVICE_TIER_ACCESS_PAT_GUARDED_SIGNATURE.test(body);",
+    "    const patched = CODEXFAST_SERVICE_TIER_ACCESS_PAT_PATCHED_SIGNATURE.test(body);",
     "    if (!guarded && !patched) return { content: body, matchedLabels: [], patchedLabels: [], alreadyPatchedLabels: [] };",
-    '    const content = guarded ? body.replace(CODEXFAST_SERVICE_TIER_REQUEST_PAT_GUARDED_SIGNATURE, "$1!0$5") : body;',
+    '    const content = guarded ? body.replace(CODEXFAST_SERVICE_TIER_ACCESS_PAT_GUARDED_SIGNATURE, "$1!$5&&($2?$3!=null?$7($3):null:{fast:!0,ultrafast:!1})$8") : body;',
+    "    return {",
+    "        content,",
+    "        matchedLabels: [CODEXFAST_SERVICE_TIER_ACCESS_PAT_LABEL],",
+    "        patchedLabels: guarded ? [CODEXFAST_SERVICE_TIER_ACCESS_PAT_LABEL] : [],",
+    "        alreadyPatchedLabels: patched ? [CODEXFAST_SERVICE_TIER_ACCESS_PAT_LABEL] : [],",
+    "    };",
+    "}",
+    "function codexfastApplyServiceTierRequestPatPatch(_resourcePath, body) {",
+    "    const legacyGuarded = CODEXFAST_SERVICE_TIER_REQUEST_PAT_GUARDED_SIGNATURE.test(body);",
+    "    const accessGuarded = CODEXFAST_SERVICE_TIER_REQUEST_ACCESS_PAT_GUARDED_SIGNATURE.test(body);",
+    "    const patched = CODEXFAST_SERVICE_TIER_REQUEST_PAT_PATCHED_SIGNATURE.test(body) || CODEXFAST_SERVICE_TIER_REQUEST_ACCESS_PAT_PATCHED_SIGNATURE.test(body);",
+    "    if (!legacyGuarded && !accessGuarded && !patched) return { content: body, matchedLabels: [], patchedLabels: [], alreadyPatchedLabels: [] };",
+    "    let content = body;",
+    '    if (legacyGuarded) content = content.replace(CODEXFAST_SERVICE_TIER_REQUEST_PAT_GUARDED_SIGNATURE, "$1!0$5");',
+    '    if (accessGuarded) content = content.replace(CODEXFAST_SERVICE_TIER_REQUEST_ACCESS_PAT_GUARDED_SIGNATURE, "$1{fast:!0,ultrafast:!1}$5");',
     "    return {",
     "        content,",
     "        matchedLabels: [CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL],",
-    "        patchedLabels: guarded ? [CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL] : [],",
-    "        alreadyPatchedLabels: patched ? [CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL] : [],",
+    "        patchedLabels: legacyGuarded || accessGuarded ? [CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL] : [],",
+    "        alreadyPatchedLabels: patched && !legacyGuarded && !accessGuarded ? [CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL] : [],",
     "    };",
     "}",
-    "const codexfastPreviousApplyRuntimePatchesToBodyForPat = applyRuntimePatchesToBody;",
-    "applyRuntimePatchesToBody = function(resourcePath, body) {",
-    "    const baseResult = codexfastPreviousApplyRuntimePatchesToBodyForPat(resourcePath, body);",
-    "    if (baseResult.matchedLabels.includes(CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL)) return baseResult;",
-    "    const extensionResult = codexfastApplyServiceTierRequestPatPatch(resourcePath, baseResult.content);",
+    "function codexfastMergeServiceTierPatResult(baseResult, extensionResult) {",
     "    return {",
     "        content: extensionResult.content,",
     "        matchedLabels: [...baseResult.matchedLabels, ...extensionResult.matchedLabels],",
     "        patchedLabels: [...baseResult.patchedLabels, ...extensionResult.patchedLabels],",
     "        alreadyPatchedLabels: [...baseResult.alreadyPatchedLabels, ...extensionResult.alreadyPatchedLabels],",
     "    };",
+    "}",
+    "const codexfastPreviousApplyRuntimePatchesToBodyForPat = applyRuntimePatchesToBody;",
+    "applyRuntimePatchesToBody = function(resourcePath, body) {",
+    "    const baseResult = codexfastPreviousApplyRuntimePatchesToBodyForPat(resourcePath, body);",
+    "    let extendedResult = baseResult;",
+    "    if (!extendedResult.matchedLabels.includes(CODEXFAST_SERVICE_TIER_ACCESS_PAT_LABEL)) {",
+    "        extendedResult = codexfastMergeServiceTierPatResult(extendedResult, codexfastApplyServiceTierAccessPatPatch(resourcePath, extendedResult.content));",
+    "    }",
+    "    if (!extendedResult.matchedLabels.includes(CODEXFAST_SERVICE_TIER_REQUEST_PAT_LABEL)) {",
+    "        extendedResult = codexfastMergeServiceTierPatResult(extendedResult, codexfastApplyServiceTierRequestPatPatch(resourcePath, extendedResult.content));",
+    "    }",
+    "    return extendedResult;",
     "};",
     "",
   ].join("\n");
@@ -523,6 +554,7 @@ function killProcessesUsingProfile(profile) {
 function verifyIsolatedChildEnvironment(profile) {
   let isolatedMain = null;
   let appServer = null;
+  let foundAppServer = false;
   const deadline = Date.now() + 5_000;
   while (Date.now() < deadline) {
     const processes = readProcesses();
@@ -532,23 +564,27 @@ function verifyIsolatedChildEnvironment(profile) {
     appServer = isolatedMain
       ? processes.find((processInfo) => isAppServerChild(processInfo, isolatedMain.pid))
       : null;
-    if (appServer) break;
+    if (!appServer) {
+      sleep(250);
+      continue;
+    }
+    foundAppServer = true;
+    const environment = spawnSync("ps", ["eww", "-p", String(appServer.pid), "-o", "command="], {
+      encoding: "utf8",
+    });
+    if (environment.status === 0) {
+      if ((environment.stdout ?? "").includes("main-process-hook.cjs")) {
+        throw new Error("The codexfast main-process hook leaked into the isolated App Server environment.");
+      }
+      console.log("Isolated child environment self-test passed");
+      return;
+    }
     sleep(250);
   }
-  if (!isolatedMain || !appServer) {
+  if (!isolatedMain || !foundAppServer) {
     throw new Error("Could not find the isolated ChatGPT/Codex App Server process.");
   }
-
-  const environment = spawnSync("ps", ["eww", "-p", String(appServer.pid), "-o", "command="], {
-    encoding: "utf8",
-  });
-  if (environment.status !== 0) {
-    throw new Error("Could not inspect the isolated App Server environment.");
-  }
-  if ((environment.stdout ?? "").includes("main-process-hook.cjs")) {
-    throw new Error("The codexfast main-process hook leaked into the isolated App Server environment.");
-  }
-  console.log("Isolated child environment self-test passed");
+  throw new Error("Could not inspect the isolated App Server environment.");
 }
 
 async function isolatedTest() {

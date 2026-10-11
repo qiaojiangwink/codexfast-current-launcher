@@ -49,6 +49,7 @@
 | `26.908.70816+9275` | 使用 `codexfast 0.79.0` 扫描已安装 App 的 7,415 个 JavaScript 文件；Fast 设置、`/fast`、service tier allowance 和 request allowance 均命中，扫描错误为 0；隔离运行时到达 ready，外部路径 App Server 环境中未发现 `main-process-hook.cjs`。Composer Speed 菜单与 conversation fallback 的旧签名未命中，正式账号或中转站的 Fast 请求尚未验证 |
 | `26.911.61220+9647` | 使用 `codexfast 0.79.0` 扫描已安装 App 的 11,001 个 JavaScript 文件；Fast 设置、`/fast`、service tier allowance 和 request allowance 均命中，扫描错误为 0；隔离运行时和 App Server 环境检查通过。正式会话经 `relaunch` 启动且 App Server 无 `main-process-hook.cjs`，但服务端 Fast 请求尚未验证 |
 | `26.930.61225+13232` | 使用 `codexfast 0.79.0` 加本项目扩展实测；新版请求许可函数接受 `chatgpt` 和 `personalAccessToken`，本项目补充该签名并保持自定义 Provider 回退。隔离运行时到达 ready，延迟加载后命中 service tier allowance、request allowance 和 `Fast slash command`，App Server 环境检查通过；服务端 Fast 请求尚未验证 |
+| `26.1007.21159+20052` | 使用 `codexfast 0.79.0` 加本项目扩展实测；Service Tier 权限改为 `{fast, ultrafast}`，自定义 Provider 的 UI 与请求路径默认得到 `null`。本项目仅补 `{fast: true, ultrafast: false}`，保留 ChatGPT/PAT 官方权限判断；延迟加载后两类 allowance 与 `Fast slash command` 均命中，隔离运行时和 App Server 环境检查通过。环境检查会重试瞬时退出的 App Server PID；服务端 Fast 请求尚未验证 |
 
 版本表记录的是验证时的客户端行为，不代表同一版本下所有账号、中转站或服务端配置都会得到相同结果。
 

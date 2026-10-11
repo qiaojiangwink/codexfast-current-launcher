@@ -106,6 +106,32 @@ assert.match(
 );
 assert.ok(personalAccessTokenServiceTierPatch.patchedLabels.includes("Speed service tier request allowance"));
 
+const currentServiceTierAccessBody =
+  "a=i?.authMethod===`chatgpt`||i?.authMethod===`personalAccessToken`,o=i?.authMethod??null,s;t[0]!==r||t[1]!==o?(s={authMethod:o,hostId:r},t[0]=r,t[1]=o,t[2]=s):s=t[2];let{data:c,isPending:l}=Zs(Hd,s),u=!!i?.isLoading||a&&l,d;t[3]!==c||t[4]!==u||t[5]!==a?(d=a&&!u&&c!=null?oee(c):null,t[3]=c,t[4]=u,t[5]=a,t[6]=d):d=t[6]";
+const currentServiceTierRequestBody =
+  "async function bga(e,t){let n=await _ga(e,t);if(n!==`chatgpt`&&n!==`personalAccessToken`)return null;let r=await KPe(e,t,{priority:`critical`});return e.query.setData(Hd,{authMethod:n,hostId:t},r),oee(r)}";
+
+function assertCurrentServiceTierAccessPatches(applyPatch) {
+  const accessPatch = applyPatch("app://-/assets/app-initial.js", currentServiceTierAccessBody);
+  assert.notEqual(accessPatch.content, currentServiceTierAccessBody);
+  assert.match(accessPatch.content, /d=!u&&\(a\?c!=null\?oee\(c\):null:\{fast:!0,ultrafast:!1\}\)/);
+  assert.ok(accessPatch.patchedLabels.includes("Speed service tier allowance"));
+
+  const requestPatch = applyPatch("app://-/assets/app-initial.js", currentServiceTierRequestBody);
+  assert.notEqual(requestPatch.content, currentServiceTierRequestBody);
+  assert.match(
+    requestPatch.content,
+    /if\(n!==`chatgpt`&&n!==`personalAccessToken`\)return \{fast:!0,ultrafast:!1\}/,
+  );
+  assert.ok(requestPatch.patchedLabels.includes("Speed service tier request allowance"));
+
+  const alreadyPatchedAccess = applyPatch("app://-/assets/app-initial.js", accessPatch.content);
+  assert.equal(alreadyPatchedAccess.content, accessPatch.content);
+  assert.ok(alreadyPatchedAccess.alreadyPatchedLabels.includes("Speed service tier allowance"));
+}
+
+assertCurrentServiceTierAccessPatches(applyDefaultRuntimePatchesToBody);
+
 const runtimePatcherSourceForVersionSource = preparedSource
   .match(
     /function runtimePatcherSourceForVersion\(patcherSource, versionKey\) \{[\s\S]*?\n\}\nasync function enableRuntimePatchInterception/,
@@ -134,6 +160,7 @@ assert.match(
   /if\(n!==`chatgpt`&&n!==`personalAccessToken`\)return!0/,
 );
 assert.ok(filteredPersonalAccessTokenPatch.patchedLabels.includes("Speed service tier request allowance"));
+assertCurrentServiceTierAccessPatches(applyFilteredRuntimePatchesToBody);
 
 const modelOverridePrepared = run(["prepare"], {
   CODEXFAST_MODEL_ID: "gpt-5.6",

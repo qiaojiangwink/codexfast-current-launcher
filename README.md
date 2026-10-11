@@ -6,7 +6,7 @@
 
 ## 当前兼容情况
 
-以下是截至 2026-10-06 的验证结果：
+以下是截至 2026-10-11 的验证结果：
 
 | 客户端版本 | 客户端表现 | 本项目的作用 |
 | --- | --- | --- |
@@ -43,6 +43,7 @@
 | `26.908.70816+9275` | Fast 设置、`/fast` 和 Service Tier 判断仍存在；部分旧版菜单和会话回退签名不再命中 | 使用 `codexfast 0.79.0` 扫描已安装 App 的 7,415 个 JavaScript 文件，Fast 设置、`/fast` 和两类 Service Tier 目标命中；隔离启动到达 ready，外部路径 App Server 的环境检查通过。未验证正式账号或中转站的 Fast 请求是否被服务端接受 |
 | `26.911.61220+9647` | Fast 设置、`/fast` 和 Service Tier 判断仍存在 | 使用 `codexfast 0.79.0` 扫描已安装 App 的 11,001 个 JavaScript 文件，四类 Fast 目标命中且扫描错误为 0；隔离启动和 App Server 环境检查通过，正式会话的脚本启动链正常。服务端 Fast 请求尚未验证 |
 | `26.930.61225+13232` | `/fast` 和 Service Tier 判断仍存在；请求许可判断新增 `personalAccessToken` 分支，主界面资源改为延迟加载 | 使用 `codexfast 0.79.0` 加本项目兼容扩展实测；隔离启动到达 ready，延迟资源加载后命中两类 Service Tier 目标和 `Fast slash command`，App Server 环境检查通过。未验证正式账号或中转站的 Fast 请求是否被服务端接受 |
+| `26.1007.21159+20052` | Service Tier 权限改为 `{fast, ultrafast}` 访问对象，非 ChatGPT/PAT Provider 默认无访问对象 | 使用 `codexfast 0.79.0` 加本项目兼容扩展实测；仅为自定义 Provider 提供 `{fast: true, ultrafast: false}`，延迟加载后命中两类 Service Tier 目标和 `Fast slash command`，隔离启动与 App Server 环境检查通过。未验证正式账号或中转站的 Fast 请求是否被服务端接受 |
 
 项目会根据客户端更新继续适配。每次更新后的实际支持情况，以仓库最新说明和运行时输出为准。
 
