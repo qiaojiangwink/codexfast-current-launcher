@@ -47,6 +47,21 @@ const prepared = run(["prepare"]);
 assert.equal(prepared.status, 0, output(prepared));
 const preparedLauncher = output(prepared).match(/"preparedLauncher": "([^"]+)"/)?.[1];
 assert.ok(preparedLauncher, output(prepared));
+const preparedDir = path.dirname(preparedLauncher);
+const tarballName = fs.readdirSync(preparedDir, { withFileTypes: true })
+  .find((entry) => entry.isFile() && entry.name !== path.basename(preparedLauncher))?.name;
+assert.ok(tarballName, "prepare should leave the selected tarball in its temporary directory");
+const localTarball = path.join(preparedDir, tarballName);
+const explicitLocal = run(["prepare"], { CODEXFAST_PACKAGE_TARBALL: localTarball });
+assert.equal(explicitLocal.status, 0, output(explicitLocal));
+assert.ok(explicitLocal.stderr.includes(`Using local codexfast tarball: ${localTarball}`), output(explicitLocal));
+assert.doesNotMatch(output(explicitLocal), /npm pack failed/);
+
+const missingLocal = run(["prepare"], { CODEXFAST_PACKAGE_TARBALL: path.join(preparedDir, "missing.tgz") });
+assert.equal(missingLocal.status, 1, output(missingLocal));
+assert.match(output(missingLocal), /CODEXFAST_PACKAGE_TARBALL not found/);
+assert.doesNotMatch(output(missingLocal), /Using local codexfast tarball|npm pack failed/);
+
 const preparedSource = fs.readFileSync(preparedLauncher, "utf8");
 assert.doesNotMatch(preparedSource, /codexfast-model-override-current-extension/);
 assert.match(preparedSource, /codexfast-service-tier-request-personal-access-token-extension/);
