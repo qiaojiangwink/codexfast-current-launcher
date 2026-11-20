@@ -528,6 +528,12 @@ function runSelftests(preparedLauncher) {
   run(process.execPath, [preparedLauncher, "__selftest-runtime-patch-body"], { stdio: "inherit" });
 }
 
+function prepareCheckedLauncher(options) {
+  const prepared = prepareLauncher(options);
+  runSelftests(prepared.preparedLauncher);
+  return prepared;
+}
+
 function killProcessesUsingProfile(profile) {
   const ps = spawnSync("ps", ["ax", "-o", "pid=", "-o", "command="], { encoding: "utf8" });
   const pids = (ps.stdout ?? "")
@@ -592,8 +598,7 @@ async function isolatedTest() {
   const codexHome = path.join(profile, "codex-home");
   fs.rmSync(profile, { recursive: true, force: true });
   fs.mkdirSync(codexHome, { recursive: true });
-  const prepared = prepareLauncher({ isolatedProfile: profile });
-  runSelftests(prepared.preparedLauncher);
+  const prepared = prepareCheckedLauncher({ isolatedProfile: profile });
 
   console.log(`Prepared codexfast ${prepared.codexfastVersion} for ${prepared.versionKey}`);
   console.log(`Isolated profile: ${profile}`);
@@ -664,14 +669,13 @@ async function isolatedTest() {
   }, 70_000);
 }
 
-async function launchNormal() {
+async function launchNormal(preflight = null) {
   if (readCodexProcesses().main.length > 0) {
     console.error("Codex.app is already running. Quit Codex.app first, or run this launcher with `relaunch` from Terminal.");
     process.exitCode = 1;
     return;
   }
-  const prepared = prepareLauncher();
-  runSelftests(prepared.preparedLauncher);
+  const prepared = preflight ?? prepareCheckedLauncher();
   console.log(`Prepared codexfast ${prepared.codexfastVersion} for ${prepared.versionKey}`);
   console.log("This launch does not modify Codex.app. Keep this terminal process running while using Codex.");
   const child = spawn(process.execPath, [prepared.preparedLauncher, "launch"], {
@@ -688,12 +692,14 @@ async function relaunch({ dryRun = false } = {}) {
   console.log("");
   if (dryRun) {
     console.log("Dry run:");
+    console.log("Would prepare and self-test the launcher before requesting Codex.app to quit.");
     console.log("Would request Codex.app to quit only if its main process is running.");
     console.log("Would wait for the main Codex process to exit.");
     console.log("Would start runtime patch launch.");
     return;
   }
 
+  const prepared = prepareCheckedLauncher();
   if (readCodexProcesses().main.length > 0) {
     console.log("Requesting Codex.app to quit...");
     if (!requestCodexQuit()) {
@@ -710,7 +716,10 @@ async function relaunch({ dryRun = false } = {}) {
     console.log("Only Codex support processes are still present; continuing with runtime patch launch.");
   }
 
-  await launchNormal();
+  // An app update may have installed while the old instance was shutting down.
+  const installed = appVersionInfo();
+  const sameBuild = installed.versionKey === prepared.versionKey && installed.executable === prepared.executable;
+  await launchNormal(sameBuild ? prepared : null);
 }
 
 function selftestProcessClassification() {
@@ -748,8 +757,7 @@ async function main() {
     return;
   }
   if (command === "prepare") {
-    const prepared = prepareLauncher();
-    runSelftests(prepared.preparedLauncher);
+    const prepared = prepareCheckedLauncher();
     console.log(JSON.stringify(prepared, null, 2));
     return;
   }

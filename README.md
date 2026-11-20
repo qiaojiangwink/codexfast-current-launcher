@@ -70,7 +70,7 @@ node bin/launch-codexfast-current.mjs relaunch
 
 项目没有需要安装的 Node.js 依赖，因此不需要运行 `npm install`。
 
-`relaunch` 会先退出正在运行的 Codex/ChatGPT Desktop，再通过临时运行时重新启动。看到下面的提示即表示启动完成：
+`relaunch` 会先准备临时启动器并运行自测，通过后再退出并重新启动正在运行的 Codex/ChatGPT Desktop。看到下面的提示即表示启动完成。
 
 ```text
 Runtime launch completed.
