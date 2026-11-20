@@ -8,8 +8,8 @@
     "codexfast-current": "bin/launch-codexfast-current.mjs"
   },
   "scripts": {
-    "check": "node --check bin/launch-codexfast-current.mjs && node --check test/test-launch-codexfast-current.mjs",
-    "test": "node test/test-launch-codexfast-current.mjs"
+    "check": "node --check bin/launch-codexfast-current.mjs && node --check test/test-launch-codexfast-current.mjs && node --check test/test-relaunch.mjs",
+    "test": "node test/test-launch-codexfast-current.mjs && node test/test-relaunch.mjs"
   },
   "engines": {
     "node": ">=18.12.0"
