@@ -469,7 +469,9 @@ function copyFallbackTarball(tempRoot, npmError) {
   if (!fallback || !fs.existsSync(fallback)) throw npmError;
   const destination = path.join(tempRoot, path.basename(fallback));
   fs.copyFileSync(fallback, destination);
-  console.warn(`npm pack failed; using bundled codexfast tarball: ${fallback}`);
+  console.warn(explicit
+    ? `Using local codexfast tarball: ${fallback}`
+    : `npm pack failed; using bundled codexfast tarball: ${fallback}`);
   return destination;
 }
 
